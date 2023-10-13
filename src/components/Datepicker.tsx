@@ -84,7 +84,14 @@ const Datepicker: React.FC<DatepickerType> = ({
             setTimeout(() => {
                 div.classList.remove("bottom-full");
                 div.classList.add("hidden");
-                window.innerWidth < 768 && div.classList.add("mb-2.5");
+                if (window.innerWidth < 768) {
+                    div.classList.remove("mb-2.5"); // Removed margin-bottom on mobile
+                    div.classList.remove("md:absolute");
+                    div.classList.add("fixed");
+                } else {
+                    div.classList.remove("fixed");
+                    div.classList.add("md:absolute");
+                }
                 div.classList.add("mt-2.5");
                 arrow.classList.remove("-bottom-2");
                 arrow.classList.remove("border-r");
@@ -339,7 +346,7 @@ const Datepicker: React.FC<DatepickerType> = ({
                 <Input setContextRef={setInputRef} />
 
                 <div
-                    className="fixed left-0 bottom-0 w-full m-0 md:absolute md:left-auto md:bottom-auto md:w-auto transition-all ease-out duration-300 z-10 mt-[1px] text-sm lg:text-xs 2xl:text-sm translate-y-4 opacity-0 hidden "
+                    className="fixed left-0 bottom-0 w-full m-0 md:absolute md:left-auto md:bottom-auto md:w-auto transition-all ease-out duration-300 z-10 mt-[1px] text-sm lg:text-xs 2xl:text-sm translate-y-4 opacity-0 hidden"
                     ref={calendarContainerRef}
                 >
                     <Arrow ref={arrowRef} />
