@@ -38,7 +38,9 @@ const Days: React.FC<Props> = ({
         changeDayHover,
         minDate,
         maxDate,
-        disabledDates
+        disabledDates,
+        unavailableDates,
+        enableSaturday
     } = useContext(DatepickerContext);
 
     // Functions
@@ -83,6 +85,7 @@ const Days: React.FC<Props> = ({
         [calendarData.date, dayHover, period.end, period.start, primaryColor]
     );
 
+    //updated this to show red on hover when over sat or sun
     const hoverClassByDay = useCallback(
         (day: number) => {
             let className = currentDateClass(day);
@@ -115,10 +118,42 @@ const Days: React.FC<Props> = ({
             }
 
             if (dayHover === fullDay) {
-                const bgColor = BG_COLOR["500"][primaryColor];
+                //old code for colour, update to work with new code if needed
+                // const bgColor = BG_COLOR["500"][primaryColor];
+
+                const bgColor =
+                    dayjs(fullDay).day() === 0 || (dayjs(fullDay).day() === 6 && !enableSaturday)
+                        ? "bg-red-500"
+                        : "bg-blue-500";
+
                 className = ` transition-all duration-500 text-white font-medium ${bgColor} ${
                     period.start ? "rounded-r-full" : "rounded-l-full"
                 }`;
+            }
+
+            if (dayHover === fullDay && unavailableDates && Array.isArray(unavailableDates)) {
+                const formattedDate = `${calendarData.date.year()}-${
+                    calendarData.date.month() + 1 >= 10
+                        ? calendarData.date.month() + 1
+                        : "0" + (calendarData.date.month() + 1)
+                }-${day >= 10 ? day : "0" + day}`;
+                if (
+                    unavailableDates.some(dateRange => {
+                        const endDatePlus1 = dayjs(dateRange.endDate).add(1, "day");
+
+                        return (
+                            dayjs(formattedDate).isSame(dateRange.startDate) ||
+                            (dayjs(formattedDate).isAfter(dateRange.startDate) &&
+                                dayjs(formattedDate).isBefore(endDatePlus1))
+                        );
+                    })
+                ) {
+                    const bgColor = "bg-red-500";
+
+                    className = ` transition-all duration-500 text-white font-medium ${bgColor} ${
+                        period.start ? "rounded-r-full" : "rounded-l-full"
+                    }`;
+                }
             }
 
             return className;
@@ -206,18 +241,84 @@ const Days: React.FC<Props> = ({
     const buttonClass = useCallback(
         (day: number, type: "current" | "next" | "previous") => {
             const baseClass = "flex items-center justify-center w-12 h-12 lg:w-10 lg:h-10";
+
+            const isUnavailable =
+                unavailableDates &&
+                Array.isArray(unavailableDates) &&
+                unavailableDates.some(unavailableDate => {
+                    const formattedDate = `${calendarData.date.year()}-${
+                        calendarData.date.month() + 1 >= 10
+                            ? calendarData.date.month() + 1
+                            : "0" + (calendarData.date.month() + 1)
+                    }-${day >= 10 ? day : "0" + day}`;
+
+                    const endDatePlus1 = dayjs(unavailableDate.endDate).add(1, "day");
+
+                    return (
+                        dayjs(formattedDate).isSame(unavailableDate.startDate) ||
+                        (dayjs(formattedDate).isAfter(unavailableDate.startDate) &&
+                            dayjs(formattedDate).isBefore(endDatePlus1))
+                    );
+                });
+
             if (type === "current") {
+                const isDisabled =
+                    isDateDisabled(day, type) ||
+                    dayjs(
+                        `${calendarData.date.year()}-${calendarData.date.month() + 1}-${day}`
+                    ).day() === 0 ||
+                    (dayjs(
+                        `${calendarData.date.year()}-${calendarData.date.month() + 1}-${day}`
+                    ).day() === 6 &&
+                        !enableSaturday) ||
+                    isUnavailable;
+
                 return cn(
                     baseClass,
                     !activeDateData(day).active
                         ? hoverClassByDay(day)
                         : activeDateData(day).className,
-                    isDateDisabled(day, type) && "line-through"
+                    isDisabled && "line-through text-gray-500"
                 );
             }
-            return cn(baseClass, isDateDisabled(day, type) && "line-through", "text-gray-400");
+
+            if (type === "next") {
+                const fullDate = `${calendarData.date.year()}-${
+                    calendarData.date.month() + (type === "next" ? 2 : 1)
+                }-${day}`;
+                const isDisabled =
+                    isDateDisabled(day, type) ||
+                    dayjs(fullDate).day() === 0 || // Sunday
+                    (dayjs(fullDate).day() === 6 && !enableSaturday); // Saturday
+
+                return cn(
+                    baseClass,
+                    (isDateDisabled(day, type) || isDisabled) && "line-through text-gray-500",
+                    "text-gray-400"
+                );
+            }
+
+            if (type === "previous") {
+                const fullDate = `${calendarData.date.year()}-${
+                    calendarData.date.month() + (type === "previous" ? 0 : 1)
+                }-${day}`;
+
+                const isDisabled =
+                    isDateDisabled(day, type) ||
+                    dayjs(fullDate).day() === 0 || // Sunday
+                    (dayjs(fullDate).day() === 6 && !enableSaturday); // Saturday
+
+                return cn(
+                    baseClass,
+                    (isDateDisabled(day, type) || isDisabled) && "line-through text-gray-500",
+                    "text-gray-400"
+                );
+            }
+
+            // Default return to handle other cases
+            return baseClass;
         },
-        [activeDateData, hoverClassByDay, isDateDisabled]
+        [activeDateData, calendarData.date, hoverClassByDay, isDateDisabled]
     );
 
     const checkIfHoverPeriodContainsDisabledPeriod = useCallback(
@@ -246,6 +347,7 @@ const Days: React.FC<Props> = ({
         };
     }, [calendarData.date]);
 
+    //updated this to disable sat and sun on hover
     const hoverDay = useCallback(
         (day: number, type: string) => {
             const object = getMetaData();
@@ -253,6 +355,23 @@ const Days: React.FC<Props> = ({
             const newHover = `${newDate.year()}-${newDate.month() + 1}-${
                 day >= 10 ? day : "0" + day
             }`;
+
+            // const isUnavailable =
+            //     unavailableDates &&
+            //     Array.isArray(unavailableDates) &&
+            //     unavailableDates.some(unavailableDate => {
+            //         const formattedDate = `${calendarData.date.year()}-${
+            //             calendarData.date.month() + 1 >= 10
+            //                 ? calendarData.date.month() + 1
+            //                 : "0" + (calendarData.date.month() + 1)
+            //         }-${day >= 10 ? day : "0" + day}`;
+            //         return (
+            //             dayjs(formattedDate).isSame(unavailableDate.startDate) ||
+            //             (dayjs(formattedDate).isAfter(unavailableDate.startDate) &&
+            //                 dayjs(formattedDate).isBefore(unavailableDate.endDate))
+            //         );
+            //         // return formattedDate == unavailableDate.startDate;
+            //     });
 
             if (period.start && !period.end) {
                 const hoverPeriod = { ...period, end: newHover };
@@ -297,6 +416,7 @@ const Days: React.FC<Props> = ({
         ]
     );
 
+    //update to handle if click days are unavailable or sat/sun
     const handleClickDay = useCallback(
         (day: number, type: "previous" | "current" | "next") => {
             function continueClick() {
@@ -313,13 +433,37 @@ const Days: React.FC<Props> = ({
                 }
             }
 
-            if (disabledDates?.length) {
-                const object = getMetaData();
-                const newDate = object[type as keyof typeof object];
-                const clickDay = `${newDate.year()}-${newDate.month() + 1}-${
-                    day >= 10 ? day : "0" + day
-                }`;
+            const object = getMetaData();
+            const newDate = object[type as keyof typeof object];
+            const clickDay = `${newDate.year()}-${newDate.month() + 1}-${
+                day >= 10 ? day : "0" + day
+            }`;
 
+            // Check if the clicked date is a Sunday (day 0) and prevent selection
+            if (dayjs(clickDay).day() === 0 || (dayjs(clickDay).day() === 6 && !enableSaturday)) {
+                return;
+            }
+
+            const isUnavailable =
+                unavailableDates &&
+                Array.isArray(unavailableDates) &&
+                unavailableDates.some(unavailableDate => {
+                    const formattedDate = `${calendarData.date.year()}-${
+                        calendarData.date.month() + 1 >= 10
+                            ? calendarData.date.month() + 1
+                            : "0" + (calendarData.date.month() + 1)
+                    }-${day >= 10 ? day : "0" + day}`;
+
+                    const endDatePlus1 = dayjs(unavailableDate.endDate).add(1, "day");
+
+                    return (
+                        dayjs(formattedDate).isSame(unavailableDate.startDate) ||
+                        (dayjs(formattedDate).isAfter(unavailableDate.startDate) &&
+                            dayjs(formattedDate).isBefore(endDatePlus1))
+                    );
+                });
+
+            if (disabledDates?.length) {
                 if (period.start && !period.end) {
                     dayjs(clickDay).isSame(dayHover) && continueClick();
                 } else if (!period.start && period.end) {
@@ -327,7 +471,7 @@ const Days: React.FC<Props> = ({
                 } else {
                     continueClick();
                 }
-            } else {
+            } else if (!isUnavailable) {
                 continueClick();
             }
         },

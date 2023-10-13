@@ -46,6 +46,8 @@ interface DatepickerStore {
     maxDate?: DateType | null;
     dateLooking?: "forward" | "backward" | "middle";
     disabledDates?: DateRangeType[] | null;
+    unavailableDates?: DateRangeType[] | null;
+    enableSaturday?: boolean;
     inputId?: string;
     inputName?: string;
     classNames?: ClassNamesTypeProp;
@@ -86,6 +88,8 @@ const DatepickerContext = createContext<DatepickerStore>({
     maxDate: null,
     dateLooking: "forward",
     disabledDates: null,
+    unavailableDates: null,
+    enableSaturday: false,
     inputId: undefined,
     inputName: undefined,
     startWeekOn: START_WEEK,

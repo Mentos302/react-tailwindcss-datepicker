@@ -80,6 +80,8 @@ export interface DatepickerType {
     maxDate?: Date | null;
     dateLooking?: "forward" | "backward" | "middle";
     disabledDates?: DateRangeType[] | null;
+    unavailableDates?: DateRangeType[] | null;
+    enableSaturday?: boolean;
     startWeekOn?: string | null;
     popoverDirection?: PopoverDirectionType;
 }
