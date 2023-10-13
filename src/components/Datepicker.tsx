@@ -84,7 +84,7 @@ const Datepicker: React.FC<DatepickerType> = ({
             setTimeout(() => {
                 div.classList.remove("bottom-full");
                 div.classList.add("hidden");
-                div.classList.add("mb-2.5");
+                window.innerWidth < 768 && div.classList.add("mb-2.5");
                 div.classList.add("mt-2.5");
                 arrow.classList.remove("-bottom-2");
                 arrow.classList.remove("border-r");
@@ -339,12 +339,12 @@ const Datepicker: React.FC<DatepickerType> = ({
                 <Input setContextRef={setInputRef} />
 
                 <div
-                    className="transition-all ease-out duration-300 absolute z-10 mt-[1px] text-sm lg:text-xs 2xl:text-sm translate-y-4 opacity-0 hidden"
+                    className="fixed left-0 bottom-0 w-full m-0 md:absolute md:left-auto md:bottom-auto md:w-auto transition-all ease-out duration-300 z-10 mt-[1px] text-sm lg:text-xs 2xl:text-sm translate-y-4 opacity-0 hidden "
                     ref={calendarContainerRef}
                 >
                     <Arrow ref={arrowRef} />
 
-                    <div className="mt-2.5 shadow-sm border border-gray-300 px-1 py-0.5 bg-white dark:bg-slate-800 dark:text-white dark:border-slate-600 rounded-lg">
+                    <div className="rounded-t-lg mb-0 md:rounded-lg mt-2.5 shadow-sm border border-gray-300 px-1 py-0.5 bg-white dark:bg-slate-800 dark:text-white dark:border-slate-600 ">
                         <div className="flex flex-col lg:flex-row py-2">
                             {showShortcuts && <Shortcuts />}
 
